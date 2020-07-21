@@ -73,26 +73,72 @@ const FoodDetails: React.FC = () => {
 
   useEffect(() => {
     async function loadFood(): Promise<void> {
-      // Load a specific food with extras based on routeParams id
+      try {
+        const { data: foodSelected } = await api.get(
+          `/foods/${routeParams.id}`,
+        );
+
+        setFood({
+          ...foodSelected,
+          formattedPrice: formatValue(foodSelected.price),
+        });
+
+        let extrasFromFood = foodSelected.extras;
+
+        extrasFromFood = extrasFromFood.map(extra => ({
+          ...extra,
+          quantity: 0,
+        }));
+
+        setExtras(extrasFromFood);
+      } catch (err) {
+        console.log(err);
+      }
     }
 
     loadFood();
   }, [routeParams]);
 
   function handleIncrementExtra(id: number): void {
-    // Increment extra quantity
+    const findExtra = extras.find(extra => extra.id === id);
+
+    if (findExtra) {
+      findExtra.quantity += 1;
+
+      setExtras(prevExtras => {
+        const extrasFilted = prevExtras.filter(extra => extra.id !== id);
+
+        return [...extrasFilted, findExtra];
+      });
+    }
   }
 
   function handleDecrementExtra(id: number): void {
-    // Decrement extra quantity
+    const findExtra = extras.find(extra => extra.id === id);
+
+    if (findExtra && findExtra.quantity > 0) {
+      findExtra.quantity -= 1;
+
+      setExtras(prevExtras => {
+        const extrasFilted = prevExtras.filter(extra => extra.id !== id);
+
+        return [...extrasFilted, findExtra];
+      });
+    }
   }
 
   function handleIncrementFood(): void {
-    // Increment food quantity
+    setFoodQuantity(prevQuantity => prevQuantity + 1);
   }
 
   function handleDecrementFood(): void {
-    // Decrement food quantity
+    setFoodQuantity(prevQuantity => {
+      if (prevQuantity > 1) {
+        return prevQuantity - 1;
+      }
+
+      return prevQuantity;
+    });
   }
 
   const toggleFavorite = useCallback(() => {
@@ -101,6 +147,7 @@ const FoodDetails: React.FC = () => {
 
   const cartTotal = useMemo(() => {
     // Calculate cartTotal
+    return formatValue(food.price * foodQuantity);
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
